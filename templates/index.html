@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Multiagente</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="chat-wrapper dark-mode">
+    <div class="chat-header">
+        <h1>Chat Multiagente</h1>
+        <div class="session-controls">
+            <span class="session-id">ID sesión: {{ session_id }}</span>
+            <form method="POST" action="/reset">
+                <button type="submit" class="reset-button">🔄 Reiniciar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="chat-history" class="chat-history">
+        {% for message in chat_history %}
+            <div class="message-wrapper {{ message.role }}">
+                <div class="message-bubble">{{ message.text }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <form id="chat-form" class="chat-input">
+        <input type="text" name="message" id="message" placeholder="Escribe tu mensaje..." autocomplete="off" required />
+        <button type="submit">➤</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById("chat-form");
+    const chatHistory = document.getElementById("chat-history");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const input = document.getElementById("message");
+        const message = input.value;
+        if (!message.trim()) return;
+
+        const userDiv = document.createElement("div");
+        userDiv.className = "message-wrapper user";
+        userDiv.innerHTML = `<div class="message-bubble">${message}</div>`;
+        chatHistory.appendChild(userDiv);
+        input.value = "";
+
+        const res = await fetch("/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `message=${encodeURIComponent(message)}`
+        });
+
+        const data = await res.json();
+        const assistantDiv = document.createElement("div");
+        assistantDiv.className = "message-wrapper assistant";
+        assistantDiv.innerHTML = `<div class="message-bubble">${data.response.replace(/\n/g, "<br>")}</div>`;
+        chatHistory.appendChild(assistantDiv);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+
+    // Autofocus al cargar
+    document.getElementById("message").focus();
+</script>
+</body>
+</html>
